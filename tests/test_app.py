@@ -20,6 +20,13 @@ class AppSmokeTests(unittest.TestCase):
         self.assertTrue(app.title)
         self.assertTrue(app.selectbox)
         self.assertTrue(app.button)
+        self.assertTrue(
+            any(
+                checkbox.label
+                == "Uygulama açıldığında taramayı otomatik başlat"
+                for checkbox in app.checkbox
+            )
+        )
 
     @patch("fiyat_takip.miniode.get_collections", return_value=[])
     def test_blocked_sources_are_visible_in_results(self, get_collections):

@@ -5,7 +5,12 @@ import streamlit as st
 
 from fiyat_takip.config import Settings
 from fiyat_takip.miniode import CatalogError, get_catalog, get_collections
-from fiyat_takip.preferences import load_minimum_price, save_minimum_price
+from fiyat_takip.preferences import (
+    load_auto_scan,
+    load_minimum_price,
+    save_auto_scan,
+    save_minimum_price,
+)
 from fiyat_takip.reports import create_excel, results_frame, save_excel
 from fiyat_takip.service import run_scan
 from fiyat_takip.storage import load_history, save_results
@@ -28,6 +33,8 @@ for key, default in {
     "report_bytes": None,
     "report_name": "fiyat_raporu.xlsx",
     "minimum_price_filter": load_minimum_price(preferences_path),
+    "auto_scan_enabled": load_auto_scan(preferences_path),
+    "automatic_scan_started": False,
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -35,6 +42,11 @@ for key, default in {
 @st.cache_data(ttl=600, max_entries=4, show_spinner=False)
 def load_collections() -> list[dict[str, str]]:
     return get_collections(settings.request_timeout)
+
+
+def save_auto_scan_choice() -> None:
+    save_auto_scan(preferences_path, bool(st.session_state.auto_scan_enabled))
+    st.session_state.automatic_scan_started = False
 
 
 st.title(":material/monitoring: Onur fiyat takip")
@@ -54,6 +66,16 @@ with st.sidebar:
     category_options = {"Tüm katalog": None}
     category_options.update(
         {item["title"]: item["handle"] for item in collections if item["title"]}
+    )
+    auto_scan_enabled = st.checkbox(
+        "Uygulama açıldığında taramayı otomatik başlat",
+        key="auto_scan_enabled",
+        persist_state="session",
+        on_change=save_auto_scan_choice,
+        help=(
+            "Açıldığında mevcut filtrelerle hemen bir tarama başlatır. "
+            "Her uygulama oturumunda yalnızca bir kez çalışır."
+        ),
     )
     with st.form("scan_settings"):
         selected_category = st.selectbox("Kategori", list(category_options))
@@ -85,7 +107,7 @@ with st.sidebar:
                 else "Önce .streamlit/secrets.toml dosyasını doldurun."
             ),
         )
-        start_scan = st.form_submit_button(
+        manual_start_scan = st.form_submit_button(
             "Taramayı başlat",
             type="primary",
             icon=":material/search:",
@@ -95,6 +117,13 @@ with st.sidebar:
         "Chrome yardımcısı açıksa taramada otomatik kullanılır; "
         "yanıt vermezse yerleşik tarayıcıya geçilir."
     )
+
+automatic_start = (
+    auto_scan_enabled and not st.session_state.automatic_scan_started
+)
+if automatic_start:
+    st.session_state.automatic_scan_started = True
+start_scan = manual_start_scan or automatic_start
 
 if start_scan:
     save_minimum_price(preferences_path, int(minimum_price))
