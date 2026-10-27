@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+.env
+.streamlit/secrets.toml
+data/
+reports/
+logs/
+outputs/
+/build_budget_workbook.mjs
+/verify_budget_workbook.mjs
+/test_render.mjs
+

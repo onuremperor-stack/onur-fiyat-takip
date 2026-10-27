@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Onur Fiyat Takip Chrome Yardımcısı",
+  "version": "1.0.0",
+  "description": "Akakçe ve Cimri fiyat kartlarını normal Chrome oturumunda yerel uygulamaya aktarır.",
+  "minimum_chrome_version": "120",
+  "permissions": ["alarms", "scripting", "tabs"],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "https://www.akakce.com/*",
+    "https://www.cimri.com/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_title": "Onur Fiyat Takip yardımcısı",
+    "default_popup": "popup.html"
+  }
+}

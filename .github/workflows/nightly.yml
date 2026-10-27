@@ -1,0 +1,43 @@
+name: Gece Fiyat Taraması
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bağımlılıkları kur
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Fiyat taramasını çalıştır
+        run: python scheduler.py
+
+      - name: Raporu sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fiyat-raporu-${{ github.run_number }}
+          path: reports/*.xlsx
+          if-no-files-found: warn
+          retention-days: 14
+
