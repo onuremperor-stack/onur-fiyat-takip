@@ -214,7 +214,7 @@ if results:
         "SKU",
     ]
     st.dataframe(
-        filtered[display_columns],
+        filtered.reindex(columns=display_columns),
         hide_index=True,
         key="results_table",
         column_config={

@@ -2,6 +2,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+import pandas as pd
 from streamlit.testing.v1 import AppTest
 
 from fiyat_takip.models import Product, ScanResult
@@ -53,6 +54,41 @@ class AppSmokeTests(unittest.TestCase):
         table = app.dataframe[0].value
         self.assertEqual(table.iloc[0]["Durum"], "Piyasa Erişimi Engellendi")
         self.assertIn("HTTP 403", table.iloc[0]["Akakçe Durumu"])
+
+    def test_legacy_results_without_matching_title_still_open(self):
+        legacy_frame = pd.DataFrame(
+            [
+                {
+                    "Ürün": "Eski tarama ürünü",
+                    "Kondisyon": "Sıfır",
+                    "Miniöde Fiyatı": 1_000,
+                    "Akakçe Fiyatı": None,
+                    "Cimri Fiyatı": None,
+                    "Akakçe Durumu": "Ürün bulunamadı",
+                    "Cimri Durumu": "Ürün bulunamadı",
+                    "Piyasa Referansı": None,
+                    "Piyasa URL": "",
+                    "Fark %": 0.0,
+                    "Durum": "Piyasa Bulunamadı",
+                    "Öneri": "Kontrol edin",
+                    "Akakçe Arama": "",
+                    "Cimri Arama": "",
+                    "SKU": "ESKI",
+                }
+            ]
+        )
+        with (
+            patch("fiyat_takip.miniode.get_collections", return_value=[]),
+            patch("fiyat_takip.reports.results_frame", return_value=legacy_frame),
+        ):
+            app = AppTest.from_file(PROJECT_ROOT / "app.py", default_timeout=10)
+            app.session_state["results"] = [object()]
+            app.session_state["report_bytes"] = b"test"
+            app.session_state["report_name"] = "test.xlsx"
+            app.run()
+
+        self.assertFalse(app.exception)
+        self.assertIn("Eşleşen Ürün", app.dataframe[0].value.columns)
 
 
 if __name__ == "__main__":
